@@ -74,9 +74,6 @@ def getMemoryUsageForThisMinute():
 				
 				print(response.status_code, response.reason)
 
-
-
-
 def getCPUUtilizationForThisMinute():
 	
 	for instance in existingInstances :
@@ -123,7 +120,6 @@ def getCPUUtilizationForThisMinute():
 				print(response.status_code, response.reason)
 
 
-			
 def getNetWorkInForThisMinute():
 	
 	for instance in existingInstances :
@@ -221,6 +217,142 @@ def getNetWorkOutForThisMinute():
 				
 				print(response.status_code, response.reason)
 
+def getDiskReadForThisMinute():
+	
+	for instance in existingInstances :
+			instance="i-9936693a"
+			time.sleep(2)
+			now = datetime.datetime.now()
+			uniqueIdentifier = now.hour+now.minute+now.second+randint(0,9999)
+			uniqueIdentifier=str(uniqueIdentifier)
+			print(uniqueIdentifier)
+			url = "http://52.20.175.246:9200/disk/DiskUtilization/id"+uniqueIdentifier
+	
+			NetworkInresponce = cw.get_metric_statistics(
+			300,
+			datetime.datetime.utcnow() - datetime.timedelta(seconds=600),
+			datetime.datetime.utcnow(),
+			'DiskReadOps',
+			'AWS/EC2',
+			statistics = ['Maximum','Average','Sum','Minimum','SampleCount'],
+			dimensions={'InstanceId':[instance]}
+		)
+
+			headers = {'Content-Type': 'application/json'}
+
+			ret = commands.getoutput("iostat")
+#print ret
+
+			fo = open("diskIO.txt", "w+")
+			fo.write(ret)
+			fo.close()
+
+			counter = 0
+			for line in open('diskIO.txt','r').readlines():
+				print "Counter -"+str(counter)+"Line -"+line
+				if (counter == 6):
+					line=re.sub(' +',' ',line)
+					linePieces = line.split(' ')
+					diskIn = linePieces[2]
+			#diskOut = linePieces[3]
+					print diskIn
+					#print diskOut
+				counter=counter+1	
+			
+			for item in NetworkInresponce:
+		
+				Average = item['Average']
+				SampleCount =item['SampleCount']
+				Timestamp =item['Timestamp']
+				Sum =item['Sum']
+				Unit =item['Unit']
+				Maximum =item['Maximum']
+				Minimum =item['Minimum']
+				Average = diskIn
+		
+				#print(Timestamp)
+				newTime = str(Timestamp)
+
+				output = re.sub(' ', 'T', newTime.rstrip())
+				print(instance)
+				payload = {'Instance-ID':instance,'Average':Average,'SampleCount':SampleCount,'@timestamp':output,'Sum':Sum,'Unit':Unit,'Maximum':Maximum,'Minimum':Minimum,'DiskOperation':'Read'}
+
+				print(payload)
+				
+				
+				response = requests.post(url, data=json.dumps(payload),headers=headers)
+				
+				print(response.status_code, response.reason)
+
+def getDiskWriteForThisMinute():
+	
+	for instance in existingInstances :
+			instance="i-9936693a"
+			time.sleep(2)
+			now = datetime.datetime.now()
+			dateVar = time.strftime("%d")+time.strftime("%m")+time.strftime("%Y")
+			uniqueIdentifier = now.hour+now.minute+now.second+randint(0,9999)+int(dateVar)
+			uniqueIdentifier=str(uniqueIdentifier)
+			print(uniqueIdentifier)
+			url = "http://52.20.175.246:9200/disk/DiskUtilization/id"+uniqueIdentifier
+	
+			NetworkInresponce = cw.get_metric_statistics(
+			300,
+			datetime.datetime.utcnow() - datetime.timedelta(seconds=600),
+			datetime.datetime.utcnow(),
+			'DiskWriteOps',
+			'AWS/EC2',
+			statistics = ['Maximum','Average','Sum','Minimum','SampleCount'],
+			dimensions={'InstanceId':[instance]}
+		)
+
+			headers = {'Content-Type': 'application/json'}
+
+			ret = commands.getoutput("iostat")
+#print ret
+
+			fo = open("diskIO.txt", "w+")
+			fo.write(ret)
+			fo.close()
+
+			counter = 0
+			for line in open('diskIO.txt','r').readlines():
+				print "Counter -"+str(counter)+"Line -"+line
+				if (counter == 6):
+					line=re.sub(' +',' ',line)
+					linePieces = line.split(' ')
+					#diskIn = linePieces[2]
+					diskOut = linePieces[3]
+					#print diskIn
+					print diskOut
+				counter=counter+1	
+			
+
+			for item in NetworkInresponce:
+		
+				Average = item['Average']
+				SampleCount =item['SampleCount']
+				Timestamp =item['Timestamp']
+				Sum =item['Sum']
+				Unit =item['Unit']
+				Maximum =item['Maximum']
+				Minimum =item['Minimum']
+				Average = diskOut
+				#print(Timestamp)
+				newTime = str(Timestamp)
+
+				output = re.sub(' ', 'T', newTime.rstrip())
+				print(instance)
+				payload = {'Instance-ID':instance,'Average':Average,'SampleCount':SampleCount,'@timestamp':output,'Sum':Sum,'Unit':Unit,'Maximum':Maximum,'Minimum':Minimum,'DiskOperation':'Write'}
+
+				print(payload)
+				
+				
+				response = requests.post(url, data=json.dumps(payload),headers=headers)
+				
+				print(response.status_code, response.reason)
+
+
 
 def main():		
 	getListOfAllInstances()
@@ -228,6 +360,8 @@ def main():
 	getNetWorkInForThisMinute()
 	getNetWorkOutForThisMinute()
 	getCPUUtilizationForThisMinute()
+	getDiskReadForThisMinute()
+	getDiskWriteForThisMinute()
 if __name__ == '__main__':
 	sys.exit(main())
 
