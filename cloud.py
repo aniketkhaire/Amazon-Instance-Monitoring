@@ -352,7 +352,52 @@ def getDiskWriteForThisMinute():
 				
 				print(response.status_code, response.reason)
 
+def getResourceUtilizationForHttpRequest():		
+	for instance in existingInstances :
+		print (instance)
+		time.sleep(2)
+		now = datetime.datetime.now()
+		uniqueIdentifier = now.hour+now.minute+now.second+randint(0,9999)
+		uniqueIdentifier=str(uniqueIdentifier)
+		print(uniqueIdentifier)
+		url = "http://52.20.175.246:9200/disk/DiskUtilization/id"+uniqueIdentifier
+	
+		urlForHttp= 'http://52.20.175.246:8000/server-status'
+		page = urllib2.urlopen(urlForHttp)
+		soup = BeautifulSoup(page.read())
+		table = soup.find('table').findNext('table')
 
+		totalCPUutil = 0.0
+		rows = table.find_all('tr')
+
+		for row in rows:
+			print (row)
+			cells = row.find_all('td')
+			counter = 0
+			for cell in cells:
+					if counter == 4:
+							#print "\nCPU UTILISATION (NUMBER OF SECONDS) --> "+cell.text
+							totalCPUutil = totalCPUutil + float(cell.text)
+					if counter == 12:
+							#print "  HTTP REQUEST --> "+cell.text
+							counter=counter+1
+
+			#print "\n ---Iteration ---\n"
+
+			output = re.sub(' ', 'T', newTime.rstrip())
+			print(instance)
+			payload = {'Instance-ID':instance,'TOTAL NUMBER OF REQUEST':counter,'TOTAL CPU UTILISATION':totalCPUutil,'@timestamp':output,'Unit':Seconds}
+
+			#print(payload)
+				
+				
+			response = requests.post(url, data=json.dumps(payload),headers=headers)
+				
+			print(response.status_code, response.reason)
+
+
+			#print "TOTAL CPU UTILISATION " + str(totalCPUutil)
+			#print "TOTAL NUMBER OF REQUEST "+ str(counter)
 
 def main():		
 	getListOfAllInstances()
@@ -362,6 +407,7 @@ def main():
 	getCPUUtilizationForThisMinute()
 	getDiskReadForThisMinute()
 	getDiskWriteForThisMinute()
+	getResourceUtilizationForHttpRequest()
 if __name__ == '__main__':
 	sys.exit(main())
 
