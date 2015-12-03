@@ -74,11 +74,110 @@ def getMemoryUsageForThisMinute():
 				
 				print(response.status_code, response.reason)
 
+			
+def getNetWorkInForThisMinute():
+	
+	for instance in existingInstances :
+			print (instance)
+			time.sleep(2)
+			now = datetime.datetime.now()
+			date = time.strftime("%d")+time.strftime("%m")+time.strftime("%Y")
+			uniqueIdentifier = now.hour+now.minute+now.second+randint(0,9999)
+			uniqueIdentifier=str(uniqueIdentifier)
+			print(uniqueIdentifier)
+			url = "http://52.20.175.246:9200/network/NetworkUtilization/id"+uniqueIdentifier
+	
+			NetworkInresponce = cw.get_metric_statistics(
+			300,
+			datetime.datetime.utcnow() - datetime.timedelta(seconds=600),
+			datetime.datetime.utcnow(),
+			'NetworkIn',
+			'AWS/EC2',
+			statistics = ['Maximum','Average','Sum','Minimum','SampleCount'],
+			dimensions={'InstanceId':[instance]}
+		)
+
+			headers = {'Content-Type': 'application/json'}
+
+			for item in NetworkInresponce:
+		
+				Average = item['Average']
+				SampleCount =item['SampleCount']
+				Timestamp =item['Timestamp']
+				Sum =item['Sum']
+				Unit =item['Unit']
+				Maximum =item['Maximum']
+				Minimum =item['Minimum']
+		
+				print(Timestamp)
+				newTime = str(Timestamp)
+
+				output = re.sub(' ', 'T', newTime.rstrip())
+				print(instance)
+				payload = {'Instance-ID':instance,'Average':Average,'SampleCount':SampleCount,'@timestamp':output,'Sum':Sum,'Unit':Unit,'Maximum':Maximum,'Minimum':Minimum,'Network':'NetworkIn'}
+
+				#print(payload)
+				
+				
+				response = requests.post(url, data=json.dumps(payload),headers=headers)
+				
+				print(response.status_code, response.reason)
+
+def getNetWorkOutForThisMinute():
+	
+	for instance in existingInstances :
+			print (instance)
+			time.sleep(2)
+			print (time.strftime("%d/%m/%Y"))
+			now = datetime.datetime.now()
+			date = time.strftime("%d")+time.strftime("%m")+time.strftime("%Y")
+			uniqueIdentifier = now.hour+now.minute+now.second+randint(0,9999)
+			uniqueIdentifier=str(uniqueIdentifier)
+			print(uniqueIdentifier)
+			url = "http://52.20.175.246:9200/network/NetworkUtilization/id"+uniqueIdentifier
+	
+			NetworkInresponce = cw.get_metric_statistics(
+			300,
+			datetime.datetime.utcnow() - datetime.timedelta(seconds=600),
+			datetime.datetime.utcnow(),
+			'NetworkOut',
+			'AWS/EC2',
+			statistics = ['Maximum','Average','Sum','Minimum','SampleCount'],
+			dimensions={'InstanceId':[instance]}
+		)
+
+			headers = {'Content-Type': 'application/json'}
+
+			for item in NetworkInresponce:
+		
+				Average = item['Average']
+				SampleCount =item['SampleCount']
+				Timestamp =item['Timestamp']
+				Sum =item['Sum']
+				Unit =item['Unit']
+				Maximum =item['Maximum']
+				Minimum =item['Minimum']
+		
+				#print(Timestamp)
+				newTime = str(Timestamp)
+
+				output = re.sub(' ', 'T', newTime.rstrip())
+				print(instance)
+				payload = {'Instance-ID':instance,'Average':Average,'SampleCount':SampleCount,'@timestamp':output,'Sum':Sum,'Unit':Unit,'Maximum':Maximum,'Minimum':Minimum,'Network':'NetworkOut'}
+
+				#print(payload)
+				
+				
+				response = requests.post(url, data=json.dumps(payload),headers=headers)
+				
+				print(response.status_code, response.reason)
+
 
 def main():		
 	getListOfAllInstances()
 	getMemoryUsageForThisMinute()
-	
+	getNetWorkInForThisMinute()
+	getNetWorkOutForThisMinute()
 if __name__ == '__main__':
 	sys.exit(main())
 
